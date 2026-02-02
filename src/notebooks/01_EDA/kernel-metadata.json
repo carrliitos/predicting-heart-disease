@@ -1,0 +1,15 @@
+{
+  "id": "benzonsalazar/ps-s6e2-01-eda",
+  "title": "PS S6E2 - 01 EDA",
+  "code_file": "01_EDA.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "false",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": ["benzonsalazar/kaggle-utils"],
+  "competition_sources": ["playground-series-s6e2"],
+  "kernel_sources": [],
+  "model_sources": []
+}
