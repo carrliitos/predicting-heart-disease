@@ -1,7 +1,15 @@
-# Kaggle Template
+# Predicting Heart Disease
+> Playground Series - Season 6 Episode 2
 
-Template repo for Kaggle projects with a clean local workflow **and** an easy way to publish notebooks to Kaggle via the 
-Kaggle API.
+Link: [Predicting Heart Disease](https://www.kaggle.com/competitions/playground-series-s6e2/overview)
+
+## Overview
+
+**Welcome to the 2026 Kaggle Playground Series!** We plan to continue in the spirit of previous playgrounds, providing 
+interesting and approachable datasets for our community to practice their machine learning skills, and anticipate a 
+competition each month.
+
+**Your Goal**: Predict the likelihood of heart disease.
 
 ## Quickstart (Local)
 
