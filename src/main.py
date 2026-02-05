@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from scripts import extraction
+from scripts import kaggle
 from utils import logger
 from utils import context
 
@@ -10,7 +10,7 @@ logger_name = Path(__file__).stem
 logging = logger.setup_logger(logger_name, f"{directory}/src/logs/main.log")
 
 def main():
-  extraction.extract()
+  kaggle.go()
 
 if __name__ == "__main__":
   main()
