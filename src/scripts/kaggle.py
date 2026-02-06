@@ -71,7 +71,7 @@ def go():
 
   model = XGBClassifier(
     n_estimators=800,
-    learning_rate=0.03,
+    learning_rate=0.05,
     max_depth=4,
     subsample=0.9,
     colsample_bytree=0.9,
