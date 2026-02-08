@@ -1,5 +1,4 @@
 import os
-import sys
 import pandas as pd
 import subprocess
 from pathlib import Path
@@ -8,6 +7,8 @@ from datetime import datetime
 from utils import logger
 from utils import context
 
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, roc_auc_score
 
@@ -57,13 +58,8 @@ def go():
   else:
     X_test_no_id = X_test
 
-  X_enc = pd.get_dummies(X, drop_first=False)
-  X_test_enc = pd.get_dummies(X_test_no_id, drop_first=False)
-  X_enc, X_test_enc = X_enc.align(X_test_enc, join="left", axis=1, fill_value=0)
-
   if y.dtype == "object":
     uniq = set(y.dropna().unique())
-
     if uniq == {"No", "Yes"}:
       y_enc = y.map({"No": 0, "Yes": 1})
     elif uniq == {"N", "Y"}:
@@ -83,14 +79,27 @@ def go():
     raise ValueError("y_enc has nulls after mapping. Check label values in TARGET column.")
   y_enc = y_enc.astype(int)
 
-  X_tr, X_va, y_tr, y_va = train_test_split(
-    X_enc, y_enc, test_size=0.2, random_state=42, stratify=y_enc
+  cat_cols = [c for c in X.columns if X[c].nunique(dropna=True) <= 10]
+  num_cols = [c for c in X.columns if c not in cat_cols]
+
+  preprocess = ColumnTransformer(
+    transformers=[("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+                  ("num", "passthrough", num_cols)],
+    remainder="drop"
   )
+
+  X_tr_raw, X_va_raw, y_tr, y_va = train_test_split(
+    X, y_enc, test_size=0.2, random_state=42, stratify=y_enc
+  )
+
+  preprocess_fit = preprocess.fit(X_tr_raw)
+  X_tr = preprocess_fit.transform(X_tr_raw)
+  X_va = preprocess_fit.transform(X_va_raw)
 
   early_stop = xgb.callback.EarlyStopping(
     rounds=200,
-    metric_name="logloss",
-    save_best=True,
+    metric_name="auc",
+    save_best=True
   )
 
   model = XGBClassifier(
@@ -102,7 +111,7 @@ def go():
     reg_lambda=1.0,
     reg_alpha=0.0,
     objective="binary:logistic",
-    eval_metric="logloss",
+    eval_metric=["auc", "logloss"],
     tree_method="hist",
     random_state=42,
     n_jobs=-1,
@@ -131,6 +140,10 @@ def go():
   except Exception as e:
     kaggle_logger.info(f"ROC-AUC not computed: {e}")
 
+  preprocess_final = preprocess.fit(X)
+  X_all = preprocess_final.transform(X)
+  X_test_enc = preprocess_final.transform(X_test_no_id)
+
   final_model = XGBClassifier(
     n_estimators=best_ntree,
     learning_rate=0.05,
@@ -140,13 +153,13 @@ def go():
     reg_lambda=1.0,
     reg_alpha=0.0,
     objective="binary:logistic",
-    eval_metric="logloss",
+    eval_metric=["auc", "logloss"],
     tree_method="hist",
     random_state=42,
-    n_jobs=-1,
+    n_jobs=-1
   )
 
-  final_model.fit(X_enc, y_enc, verbose=False)
+  final_model.fit(X_all, y_enc, verbose=False)
   test_proba = final_model.predict_proba(X_test_enc)[:, 1]
 
   submission = pd.DataFrame({
@@ -158,7 +171,7 @@ def go():
   submission.to_csv(out_path, index=False)
   kaggle_logger.info(f"Saved submission: {out_path}")
 
-  version = "02"
+  version = "03"
   kaggle_submit(comp="playground-series-s6e2", file=Path(out_path), msg=f"XGBoost version {version}")
 
 if __name__ == "__main__":
